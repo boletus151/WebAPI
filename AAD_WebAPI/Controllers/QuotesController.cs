@@ -22,6 +22,7 @@ namespace AAD_WebAPI.Controllers
 {
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
+    using Newtonsoft.Json;
     using Quotes.Contracts;
     using Quotes.Model.UI;
     using Swashbuckle.AspNetCore.Annotations;
@@ -37,14 +38,16 @@ namespace AAD_WebAPI.Controllers
     public class QuotesController : Controller
     {
         private readonly IQuotesRepository quotesRepository;
+        private readonly IConfiguration configuration;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="QuotesController" /> class.
         /// </summary>
         /// <param name="quotesRepo">The quotes repository.</param>
-        public QuotesController(IQuotesRepository quotesRepo)
+        public QuotesController(IQuotesRepository quotesRepo, IConfiguration configuration)
         {
             this.quotesRepository = quotesRepo;
+            this.configuration = configuration;
         }
 
         /// <summary>
@@ -55,8 +58,9 @@ namespace AAD_WebAPI.Controllers
         [HttpPost]
         [Authorize]
         [SwaggerResponse(201, Type = typeof(SuccessResponse), Description = ResponseMessages.Created)]
-        public int Create([FromBody] Quote quote)
+        public int Post([FromBody] Quote quote)
         {
+            if (quote == null) return 0;
             var id = this.quotesRepository.AddQuote(quote);
             return id;
         }
@@ -69,6 +73,7 @@ namespace AAD_WebAPI.Controllers
         [HttpDelete("{id}")]
         [Authorize]
         [SwaggerResponse(204, Type = typeof(bool), Description = ResponseMessages.Deleted)]
+        [SwaggerResponse(401, Type = typeof(bool), Description = ResponseMessages.UnauthorizedMsg)]
         public bool Delete(int id)
         {
             return this.quotesRepository.Delete(id);
@@ -108,6 +113,27 @@ namespace AAD_WebAPI.Controllers
         public Quote Update([FromBody] Quote quote)
         {
             throw new NotImplementedException();
+        }
+
+        /// <summary>
+        ///     Get appsettings dummy
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("configvalues")]
+        [SwaggerResponse(200, Type = typeof(string), Description = ResponseMessages.SuccessMsg)]
+        [SwaggerResponse(400, Type = typeof(ErrorResponse), Description = ResponseMessages.BadRequestMsg)]
+        public string ConfigValues()
+        {
+            var values = new KeyValuePair<string, string>[]
+            {
+                new KeyValuePair<string, string>("clientId", configuration["AzureAd:ClientId"]),
+                new KeyValuePair<string, string>("tenantId", configuration["AzureAd:TenantId"]),
+                new KeyValuePair<string, string>("audience", configuration["AzureAd:Audience"]),
+                new KeyValuePair<string, string>("instance", configuration["AzureAd:Instance"])
+            };
+
+            var ret = JsonConvert.SerializeObject(values, Formatting.Indented);
+            return ret;
         }
     }
 }

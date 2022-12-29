@@ -46,29 +46,33 @@ namespace AAD_WebAPI
                 {
                     OnAuthenticationFailed = context =>
                     {
-                        Debug.WriteLine(context);
+                        Debug.WriteLine("TOKEN VALIDATION: OnChallenge");
+                        Trace.WriteLine("TOKEN VALIDATION: OnChallenge");
                         return Task.CompletedTask;
                     },
                     OnChallenge = context =>
                     {
-                        Debug.WriteLine(context);
+                        Debug.WriteLine("TOKEN VALIDATION: OnChallenge");
+                        Trace.WriteLine("TOKEN VALIDATION: OnChallenge");
                         return Task.CompletedTask;
                     },
                     OnForbidden = context =>
                     {
-                        Debug.WriteLine(context);
+                        Debug.WriteLine("TOKEN VALIDATION: OnForbidden");
+                        Trace.WriteLine("TOKEN VALIDATION: OnForbidden");
                         return Task.CompletedTask;
                     },
                     OnTokenValidated = context =>
                     {
-                        Debug.WriteLine("the token is valid on AD");
+                        Debug.WriteLine("TOKEN VALIDATION: The token is valid");
+                        Trace.WriteLine("TOKEN VALIDATION: The token is valid");
                         return Task.CompletedTask;
                     }
                 };
             });
 
             // add authorization support.
-            services.AddAuthorization();
+            //services.AddAuthorization();
 
             services.AddSwaggerGen(c =>
             {
