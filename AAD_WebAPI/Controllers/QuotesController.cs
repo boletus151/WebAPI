@@ -73,7 +73,7 @@ namespace AAD_WebAPI.Controllers
         [HttpDelete("{id}")]
         [Authorize]
         [SwaggerResponse(204, Type = typeof(bool), Description = ResponseMessages.Deleted)]
-        [SwaggerResponse(401, Type = typeof(bool), Description = ResponseMessages.UnauthorizedMsg)]
+        [SwaggerResponse(401, Type = typeof(string), Description = ResponseMessages.UnauthorizedMsg)]
         public bool Delete(int id)
         {
             return this.quotesRepository.Delete(id);
@@ -108,8 +108,8 @@ namespace AAD_WebAPI.Controllers
         /// <param name="quote">The quote.</param>
         /// <returns>The modified quote</returns>
         [HttpPatch]
+        [Authorize]
         [SwaggerResponse(201, Type = typeof(SuccessResponse), Description = ResponseMessages.Created)]
-        
         public Quote Update([FromBody] Quote quote)
         {
             throw new NotImplementedException();
@@ -120,6 +120,7 @@ namespace AAD_WebAPI.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet("configvalues")]
+        [Authorize]
         [SwaggerResponse(200, Type = typeof(string), Description = ResponseMessages.SuccessMsg)]
         [SwaggerResponse(400, Type = typeof(ErrorResponse), Description = ResponseMessages.BadRequestMsg)]
         public string ConfigValues()
@@ -132,6 +133,7 @@ namespace AAD_WebAPI.Controllers
                 new KeyValuePair<string, string>("instance", configuration["AzureAd:Instance"])
             };
 
+            // only for testing purposes
             var ret = JsonConvert.SerializeObject(values, Formatting.Indented);
             return ret;
         }

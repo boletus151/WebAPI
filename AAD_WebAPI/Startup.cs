@@ -4,7 +4,6 @@ using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Quotes.Contracts;
-using Quotes.Contracts.SettingsClasses;
 using Quotes.Implementations.Mocks;
 using System.Diagnostics;
 using WebAPI_BaseComponents.Filters;
@@ -112,7 +111,11 @@ namespace AAD_WebAPI
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                // Enable middleware to serve generated Swagger as a JSON endpoint.
                 app.UseSwagger();
+                
+                // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), 
+                // specifying the Swagger JSON endpoint.
                 app.UseSwaggerUI(c =>
                 {
                     // customize swagger ui entry point
@@ -124,6 +127,19 @@ namespace AAD_WebAPI
             else
             {
                 app.UseHsts();
+
+                // Enable middleware to serve generated Swagger as a JSON endpoint.
+                app.UseSwagger();
+                
+                // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), 
+                // specifying the Swagger JSON endpoint.
+                app.UseSwaggerUI(c =>
+                {
+                    // customize swagger ui entry point
+                    //c.RoutePrefix = "swagger/ui/index.html";
+
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Quotes WebApi");
+                });
             }
 
             app.UseCors("default");

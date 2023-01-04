@@ -26,6 +26,7 @@ namespace AAD_WebAPI.Settings
 
         public int MinutesTimeout { get; }
 
+        // Not used in this AAD_WebAPI
         public string? MySecretFromTheKeyvault { get; }
     }
 }
