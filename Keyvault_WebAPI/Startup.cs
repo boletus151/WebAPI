@@ -1,4 +1,6 @@
 ﻿using Keyvault_WebAPI.Settings;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.OpenApi.Models;
 using Quotes.Contracts;
 using Quotes.Implementations.Mocks;
@@ -7,6 +9,8 @@ namespace Keyvault_WebAPI
 {
     public class Startup
     {
+        private const string ApiTitle = "Azure Keyvault Example WebApi";
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -26,7 +30,7 @@ namespace Keyvault_WebAPI
                 c.SwaggerDoc("v1", new OpenApiInfo
                 {
                     TermsOfService = new Uri("https://creativecommons.org/share-your-work/public-domain/freeworks"),
-                    Title = "QuotesWebApi",
+                    Title = ApiTitle,
                     Version = Configuration["currentVersion"],
                     Contact = new OpenApiContact
                     {
@@ -36,7 +40,18 @@ namespace Keyvault_WebAPI
                 });
             });
 
-            services.AddControllers();
+            services.AddVersionedApiExplorer(op =>
+            {
+                op.GroupNameFormat = "VV";
+            });
+
+            services.AddApiVersioning(op =>
+            {
+                op.DefaultApiVersion = new ApiVersion(1, 0);
+                op.ApiVersionReader = new HeaderApiVersionReader() { HeaderNames = { "api-version" } };
+                op.AssumeDefaultVersionWhenUnspecified = true;
+                op.ReportApiVersions = true;
+            });
 
             // add wide-open CORS.
             // this should be changed before deploying to production
@@ -48,27 +63,28 @@ namespace Keyvault_WebAPI
                        .AllowAnyMethod()
                        .AllowAnyHeader();
             }));
+            services.AddControllers();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
+            //if (env.IsDevelopment())
+            //{
+            app.UseDeveloperExceptionPage();
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
             {
-                app.UseDeveloperExceptionPage();
-                app.UseSwagger();
-                app.UseSwaggerUI(c =>
-                {
-                    // customize swagger ui entry point
-                    //c.RoutePrefix = "swagger/ui/index.html";
+                // customize swagger ui entry point
+                //c.RoutePrefix = "swagger/ui/index.html";
 
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Quotes WebApi");
-                });
-            }
-            else
-            {
-                app.UseHsts();
-            }
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", ApiTitle);
+            });
+            //}
+            //else
+            //{
+            //    app.UseHsts();
+            //}
 
             app.UseCors("default");
             app.UseHttpsRedirection();
