@@ -7,6 +7,7 @@ using WebAPI_BaseComponents.Responses;
 namespace Keyvault_WebAPI.Controllers
 {
     [Route("api/examples")]
+    [ApiController]
     [ApiVersion("1.0")]
     public class Examples1Controller : Controller
     {
@@ -29,7 +30,9 @@ namespace Keyvault_WebAPI.Controllers
             return $"The secret is: {this.myAppSettings.MySecretFromTheKeyvault}";
         }
     }
+
     [Route("api/examples")]
+    [ApiController]
     [ApiVersion("2.0")]
     public class Examples2Controller : Controller
     {

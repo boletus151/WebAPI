@@ -1,7 +1,8 @@
-﻿using Keyvault_WebAPI.Settings;
+﻿using Keyvault_WebAPI.Configurations;
+using Keyvault_WebAPI.Settings;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.Versioning;
-using Microsoft.OpenApi.Models;
 using Quotes.Contracts;
 using Quotes.Implementations.Mocks;
 
@@ -9,7 +10,7 @@ namespace Keyvault_WebAPI
 {
     public class Startup
     {
-        private const string ApiTitle = "Azure Keyvault Example WebApi";
+        public const string ApiTitle = "Azure Keyvault Example WebApi";
 
         public Startup(IConfiguration configuration)
         {
@@ -24,26 +25,7 @@ namespace Keyvault_WebAPI
             // Register Contracts and Implementations
             // Register automapper classes
             RegisterOwnServices(ref services);
-
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo
-                {
-                    TermsOfService = new Uri("https://creativecommons.org/share-your-work/public-domain/freeworks"),
-                    Title = ApiTitle,
-                    Version = Configuration["currentVersion"],
-                    Contact = new OpenApiContact
-                    {
-                        Email = "boletus151@gmail.com",
-                        Name = "boletus151"
-                    }
-                });
-            });
-
-            services.AddVersionedApiExplorer(op =>
-            {
-                op.GroupNameFormat = "VV";
-            });
+            services.AddControllers();
 
             services.AddApiVersioning(op =>
             {
@@ -53,38 +35,43 @@ namespace Keyvault_WebAPI
                 op.ReportApiVersions = true;
             });
 
+            services.AddVersionedApiExplorer(op =>
+            {
+                op.GroupNameFormat = "'v'VV";
+                //op.SubstituteApiVersionInUrl= true;
+            });
+
+            services.AddSwaggerGen();
+
+            // as IApiVersionDescriptionProvider cannot be injected,
+            // a new class should be create
+            // Tutorial: https://referbruv.com/blog/integrating-aspnet-core-api-versions-with-swagger-ui/
+            services.ConfigureOptions<ConfigureSwaggerOptions>();
+
             // add wide-open CORS.
             // this should be changed before deploying to production
             // to ensure that only your accepted origins can call the API.
-
             services.AddCors(o => o.AddPolicy("default", builder =>
             {
                 builder.AllowAnyOrigin()
                        .AllowAnyMethod()
                        .AllowAnyHeader();
             }));
-            services.AddControllers();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IApiVersionDescriptionProvider apiVersionDescriptionProvider)
         {
-            //if (env.IsDevelopment())
-            //{
             app.UseDeveloperExceptionPage();
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
-                // customize swagger ui entry point
-                //c.RoutePrefix = "swagger/ui/index.html";
-
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", ApiTitle);
+                foreach (var item in apiVersionDescriptionProvider.ApiVersionDescriptions)
+                {
+                    var url = $"{item.GroupName}/swagger.json";
+                    c.SwaggerEndpoint(url, item.GroupName.ToString());
+                }
             });
-            //}
-            //else
-            //{
-            //    app.UseHsts();
-            //}
 
             app.UseCors("default");
             app.UseHttpsRedirection();
