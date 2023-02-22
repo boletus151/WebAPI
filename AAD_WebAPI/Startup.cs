@@ -79,7 +79,7 @@ namespace AAD_WebAPI
                 {
                     TermsOfService = new Uri("https://creativecommons.org/share-your-work/public-domain/freeworks"),
                     Title = "QuotesWebApi",
-                    Version = Configuration["currentVersion"],
+                    Version = "v1.0",
                     Contact = new OpenApiContact
                     {
                         Email = "boletus151@gmail.com",
@@ -119,9 +119,8 @@ namespace AAD_WebAPI
                 app.UseSwaggerUI(c =>
                 {
                     // customize swagger ui entry point
-                    //c.RoutePrefix = "swagger/ui/index.html";
 
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Quotes WebApi");
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "AAD WebApi");
                 });
             }
             else
@@ -136,9 +135,8 @@ namespace AAD_WebAPI
                 app.UseSwaggerUI(c =>
                 {
                     // customize swagger ui entry point
-                    //c.RoutePrefix = "swagger/ui/index.html";
-
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Quotes WebApi");
+                    c.RoutePrefix = string.Empty;
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "AAD WebApi");
                 });
             }
 
