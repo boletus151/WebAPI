@@ -18,32 +18,27 @@
 //  </summary>
 //  --------------------------------------------------------------------------------------------------------------------
 
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using Swashbuckle.AspNetCore.Annotations;
+using WebAPI_BaseComponents.Constants;
+using WebAPI_BaseComponents.Responses;
+
 namespace AAD_WebAPI.Controllers
 {
-    using Microsoft.AspNetCore.Authorization;
-    using Microsoft.AspNetCore.Mvc;
-    using Newtonsoft.Json;
-    using Quotes.Contracts;
-    using Quotes.Model.UI;
-    using Swashbuckle.AspNetCore.Annotations;
-    using System;
-    using System.Collections.Generic;
-    using WebAPI_BaseComponents.Constants;
-    using WebAPI_BaseComponents.Filters;
-    using WebAPI_BaseComponents.Responses;
-
     [Route("api/[controller]")]
     [ApiController]
     [ApiVersion("1.0")]
-    public class ExampleController : Controller
+    public class ExamplesController : Controller
     {
         private readonly IConfiguration configuration;
 
         /// <summary>
-        ///     Initializes a new instance of the <see cref="ExampleController" /> class.
+        ///     Initializes a new instance of the <see cref="ExamplesController" /> class.
         /// </summary>
         /// <param name="quotesRepo">The quotes repository.</param>
-        public ExampleController(IConfiguration configuration)
+        public ExamplesController(IConfiguration configuration)
         {
             this.configuration = configuration;
         }
@@ -55,7 +50,6 @@ namespace AAD_WebAPI.Controllers
         [HttpGet("configvalues")]
         [Authorize]
         [SwaggerResponse(200, Type = typeof(string), Description = ResponseMessages.SuccessMsg)]
-        [SwaggerResponse(400, Type = typeof(ErrorResponse), Description = ResponseMessages.BadRequestMsg)]
         public string ConfigValues()
         {
             var values = new KeyValuePair<string, string>[]

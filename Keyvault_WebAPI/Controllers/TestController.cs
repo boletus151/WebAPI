@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Quotes.Contracts;
 using Swashbuckle.AspNetCore.Annotations;
 using WebAPI_BaseComponents.Constants;
@@ -6,7 +8,7 @@ using WebAPI_BaseComponents.Responses;
 
 namespace Keyvault_WebAPI.Controllers
 {
-    [Route("api/[Controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     [ApiVersion("2.0")]
     public class TestController : ControllerBase
@@ -22,13 +24,12 @@ namespace Keyvault_WebAPI.Controllers
         ///     Get a dummy secret from the keyvault.
         /// </summary>
         /// <returns></returns>
-        [HttpGet("show-dummy-secret")]
+        [HttpGet("test")]
         [MapToApiVersion("2.0")]
         [SwaggerResponse(200, Type = typeof(string), Description = ResponseMessages.SuccessMsg)]
-        [SwaggerResponse(400, Type = typeof(ErrorResponse), Description = ResponseMessages.BadRequestMsg)]
         public string Get2()
         {
-            return $"This is test";
+            return JsonConvert.SerializeObject("This is a test for v2.0", Formatting.Indented);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using Quotes.Contracts;
 using Swashbuckle.AspNetCore.Annotations;
 using WebAPI_BaseComponents.Constants;
@@ -6,7 +7,7 @@ using WebAPI_BaseComponents.Responses;
 
 namespace Keyvault_WebAPI.Controllers
 {
-    [Route("api/examples")]
+    [Route("api/[controller]")]
     [ApiController]
     [ApiVersion("1.0")]
     public class Examples1Controller : Controller
@@ -24,14 +25,13 @@ namespace Keyvault_WebAPI.Controllers
         /// <returns></returns>
         [HttpGet("show-dummy-secret")]
         [SwaggerResponse(200, Type = typeof(string), Description = ResponseMessages.SuccessMsg)]
-        [SwaggerResponse(400, Type = typeof(ErrorResponse), Description = ResponseMessages.BadRequestMsg)]
         public string Get1()
         {
-            return $"The secret is: {this.myAppSettings.MySecretFromTheKeyvault}";
+            return JsonConvert.SerializeObject($"The secret is: {this.myAppSettings.MySecretFromTheKeyvault}");
         }
     }
 
-    [Route("api/examples")]
+    [Route("api/[controller]")]
     [ApiController]
     [ApiVersion("2.0")]
     public class Examples2Controller : Controller
@@ -50,10 +50,9 @@ namespace Keyvault_WebAPI.Controllers
         [HttpGet("show-dummy-secret")]
         [MapToApiVersion("2.0")]
         [SwaggerResponse(200, Type = typeof(string), Description = ResponseMessages.SuccessMsg)]
-        [SwaggerResponse(400, Type = typeof(ErrorResponse), Description = ResponseMessages.BadRequestMsg)]
         public string Get2()
         {
-            return $"The version 2 does not retrive the secret anymore";
+            return JsonConvert.SerializeObject($"The version 2 does not retrive the secret anymore");
         }
 
         /// <summary>
@@ -63,10 +62,9 @@ namespace Keyvault_WebAPI.Controllers
         [HttpGet("new-endpoint")]
         [MapToApiVersion("2.0")]
         [SwaggerResponse(200, Type = typeof(string), Description = ResponseMessages.SuccessMsg)]
-        [SwaggerResponse(400, Type = typeof(ErrorResponse), Description = ResponseMessages.BadRequestMsg)]
         public string GetNew()
         {
-            return $"This is a new endpoint only available at V2";
+            return JsonConvert.SerializeObject($"This is a new endpoint only available at V2");
         }
     }
 }
