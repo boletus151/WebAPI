@@ -70,7 +70,7 @@ namespace Keyvault_WebAPI
                 {
                     foreach (var item in apiVersionDescriptionProvider.ApiVersionDescriptions)
                     {
-                        var url = $"{item.GroupName}/swagger.json";
+                        var url = $"swagger/{item.GroupName}/swagger.json";
                         c.SwaggerEndpoint(url, item.GroupName.ToString());
                     }
                 });

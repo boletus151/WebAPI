@@ -85,8 +85,7 @@ namespace AAD_WebAPI
 
             services.AddVersionedApiExplorer(op =>
             {
-                //op.GroupNameFormat = "'v'VV";
-                op.GroupNameFormat = "VV";
+                op.GroupNameFormat = "'v'VV";
                 //op.SubstituteApiVersionInUrl= true;
             });
 
@@ -176,7 +175,7 @@ namespace AAD_WebAPI
                     // if versioned
                     foreach (var item in apiVersionDescriptionProvider.ApiVersionDescriptions)
                     {
-                        var url = $"{item.GroupName}/swagger.json";
+                        var url = $"swagger/{item.GroupName}/swagger.json";
                         options.SwaggerEndpoint(url, item.GroupName.ToString());
                     }
                 });
