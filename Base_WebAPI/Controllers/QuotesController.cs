@@ -18,36 +18,29 @@
 //  </summary>
 //  --------------------------------------------------------------------------------------------------------------------
 
-namespace AAD_WebAPI.Controllers
-{
-    using Microsoft.AspNetCore.Authorization;
-    using Microsoft.AspNetCore.Mvc;
-    using Newtonsoft.Json;
-    using Quotes.Contracts;
-    using Quotes.Model.UI;
-    using Swashbuckle.AspNetCore.Annotations;
-    using System;
-    using System.Collections.Generic;
-    using WebAPI_BaseComponents.Constants;
-    using WebAPI_BaseComponents.Filters;
-    using WebAPI_BaseComponents.Responses;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Quotes.Contracts;
+using Quotes.Model.UI;
+using Swashbuckle.AspNetCore.Annotations;
+using WebAPI_BaseComponents.Constants;
 
+namespace Base_WebAPI.Controllers
+{
     [Route("api/[controller]")]
-    [HandleResult]
-    [HandleException]
+    [ApiController]
+    [ApiVersion("1.0")]
     public class QuotesController : Controller
     {
         private readonly IQuotesRepository quotesRepository;
-        private readonly IConfiguration configuration;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="QuotesController" /> class.
         /// </summary>
         /// <param name="quotesRepo">The quotes repository.</param>
-        public QuotesController(IQuotesRepository quotesRepo, IConfiguration configuration)
+        public QuotesController(IQuotesRepository quotesRepo)
         {
             this.quotesRepository = quotesRepo;
-            this.configuration = configuration;
         }
 
         /// <summary>
@@ -56,11 +49,13 @@ namespace AAD_WebAPI.Controllers
         /// <param name="quote">The quote.</param>
         /// <returns>The identifier of the new quote</returns>
         [HttpPost]
-        [Authorize]
-        [SwaggerResponse(201, Type = typeof(SuccessResponse), Description = ResponseMessages.Created)]
-        public int Post([FromBody] Quote quote)
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [SwaggerResponse(201, Type = typeof(string), Description = ResponseMessages.SuccessMsg)]
+        [SwaggerResponse(400, Description = ResponseMessages.BadRequestMsg)]
+        [SwaggerResponse(401, Description = ResponseMessages.UnauthorizedMsg)]
+        [SwaggerResponse(500, Description = ResponseMessages.InternalError)]
+        public int Create(Quote quote)
         {
-            if (quote == null) return 0;
             var id = this.quotesRepository.AddQuote(quote);
             return id;
         }
@@ -71,9 +66,12 @@ namespace AAD_WebAPI.Controllers
         /// <param name="id">The identifier.</param>
         /// <returns>True if quote was deleted, false otherwise</returns>
         [HttpDelete("{id}")]
-        [Authorize]
+        [Authorize(AuthenticationSchemes = "Bearer")]
         [SwaggerResponse(204, Type = typeof(bool), Description = ResponseMessages.Deleted)]
-        [SwaggerResponse(401, Type = typeof(string), Description = ResponseMessages.UnauthorizedMsg)]
+        [SwaggerResponse(400, Description = ResponseMessages.BadRequestMsg)]
+        [SwaggerResponse(401, Description = ResponseMessages.UnauthorizedMsg)]
+        [SwaggerResponse(404, Description = ResponseMessages.NotFoundMsg)]
+        [SwaggerResponse(500, Description = ResponseMessages.InternalError)]
         public bool Delete(int id)
         {
             return this.quotesRepository.Delete(id);
@@ -85,6 +83,10 @@ namespace AAD_WebAPI.Controllers
         /// <returns></returns>
         [HttpGet]
         [SwaggerResponse(200, Type = typeof(Quote), Description = ResponseMessages.SuccessMsg)]
+        [SwaggerResponse(400, Description = ResponseMessages.BadRequestMsg)]
+        [SwaggerResponse(401, Description = ResponseMessages.UnauthorizedMsg)]
+        [SwaggerResponse(404, Description = ResponseMessages.NotFoundMsg)]
+        [SwaggerResponse(500, Description = ResponseMessages.InternalError)]
         public IEnumerable<Quote> Get()
         {
             return this.quotesRepository.GetQuotes();
@@ -97,6 +99,10 @@ namespace AAD_WebAPI.Controllers
         /// <returns>The specific quote</returns>
         [HttpGet("{id}")]
         [SwaggerResponse(200, Type = typeof(IEnumerable<Quote>), Description = ResponseMessages.SuccessMsg)]
+        [SwaggerResponse(400, Description = ResponseMessages.BadRequestMsg)]
+        [SwaggerResponse(401, Description = ResponseMessages.UnauthorizedMsg)]
+        [SwaggerResponse(404, Description = ResponseMessages.NotFoundMsg)]
+        [SwaggerResponse(500, Description = ResponseMessages.InternalError)]
         public Quote Get(int id)
         {
             return this.quotesRepository.GetQuoteById(id);
@@ -108,34 +114,14 @@ namespace AAD_WebAPI.Controllers
         /// <param name="quote">The quote.</param>
         /// <returns>The modified quote</returns>
         [HttpPatch]
-        [Authorize]
-        [SwaggerResponse(201, Type = typeof(SuccessResponse), Description = ResponseMessages.Created)]
-        public Quote Update([FromBody] Quote quote)
+        [SwaggerResponse(201, Type = typeof(string), Description = ResponseMessages.SuccessMsg)]
+        [SwaggerResponse(400, Description = ResponseMessages.BadRequestMsg)]
+        [SwaggerResponse(401, Description = ResponseMessages.UnauthorizedMsg)]
+        [SwaggerResponse(500, Description = ResponseMessages.InternalError)]
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        public Quote Update(Quote quote)
         {
             throw new NotImplementedException();
-        }
-
-        /// <summary>
-        ///     Get appsettings dummy
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet("configvalues")]
-        [Authorize]
-        [SwaggerResponse(200, Type = typeof(string), Description = ResponseMessages.SuccessMsg)]
-        [SwaggerResponse(400, Type = typeof(ErrorResponse), Description = ResponseMessages.BadRequestMsg)]
-        public string ConfigValues()
-        {
-            var values = new KeyValuePair<string, string>[]
-            {
-                new KeyValuePair<string, string>("clientId", configuration["AzureAd:ClientId"]),
-                new KeyValuePair<string, string>("tenantId", configuration["AzureAd:TenantId"]),
-                new KeyValuePair<string, string>("audience", configuration["AzureAd:Audience"]),
-                new KeyValuePair<string, string>("instance", configuration["AzureAd:Instance"])
-            };
-
-            // only for testing purposes
-            var ret = JsonConvert.SerializeObject(values, Formatting.Indented);
-            return ret;
         }
     }
 }

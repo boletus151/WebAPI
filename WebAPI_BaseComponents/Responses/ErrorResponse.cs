@@ -20,60 +20,49 @@
 
 namespace WebAPI_BaseComponents.Responses
 {
+    using System;
     using System.Collections.Generic;
-    using WebAPI_BaseComponents.Responses;
 
-    /// <summary>
-    ///     HttpResponseCustom class.
-    /// </summary>
     public class ErrorResponse
     {
-        /// <summary>
-        ///     Código del error
-        /// </summary>
         public string? HttpCode
         {
             get;
             set;
         }
 
-        /// <summary>
-        ///     Mensaje del error
-        /// </summary>
         public string? HttpMessage
         {
             get;
             set;
         }
 
-        /// <summary>
-        ///     Información adicional
-        /// </summary>
+        public string Message { get; set; }
+
         public IEnumerable<MoreInfoError>? MoreInformation
         {
             get;
             set;
         }
+        public Exception Exception { get; internal set; }
+        public string CustomMessage { get; internal set; }
     }
 
-    /// <summary>
-    ///     Clase que refleja el detalle del error
-    /// </summary>
     public class MoreInfoError
     {
-        /// <summary>
-        ///     Clave
-        /// </summary>
-        public string? Campo
+        public MoreInfoError(string field, string value)
+        {
+            this.Field = field;
+            this.Value = value;
+        }
+
+        public string Field
         {
             get;
             set;
         }
 
-        /// <summary>
-        ///     Valor del error
-        /// </summary>
-        public string? Valor
+        public string Value
         {
             get;
             set;

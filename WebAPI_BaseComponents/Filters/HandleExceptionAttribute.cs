@@ -27,6 +27,7 @@ namespace WebAPI_BaseComponents.Filters
     using System.Collections.Generic;
     using System.Net;
     using System.Threading.Tasks;
+    using WebAPI_BaseComponents.Exceptions;
     using WebAPI_BaseComponents.Responses;
 
     public class HandleExceptionAttribute : ExceptionFilterAttribute
@@ -38,43 +39,55 @@ namespace WebAPI_BaseComponents.Filters
             context.ExceptionHandled = true;
             context.HttpContext.Response.Clear();
 
-            if (context.Exception.GetType() == typeof(ArgumentException))
-            {
-                context.HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            var httpStatusCode = context.HttpContext.Response.StatusCode.ToString();
+            var httpMessage = context.HttpContext.Response.ToString();
 
-                json = JsonConvert.SerializeObject(new ErrorResponse
+            ErrorResponse errorResp;
+
+            if (context.Exception.GetType() == typeof(InvalidBackendCastException))
+            {
+                var ex = (InvalidBackendCastException)context.Exception;
+                errorResp = new ErrorResponse
                 {
-                    HttpCode = ((int)HttpStatusCode.BadRequest).ToString(),
-                    HttpMessage = Constants.ResponseMessages.BadRequestMsg,
+                    HttpCode = httpStatusCode,
+                    HttpMessage = httpMessage,
+                    Exception = context.Exception,
+                    Message = context.Exception.Message,
                     MoreInformation = new List<MoreInfoError>
                     {
-                        new MoreInfoError
-                        {
-                            Campo = "Excepción", Valor = context.Exception.Message
-                        }
+                        new MoreInfoError(nameof(ex.CustomMessage),ex.CustomMessage),
+                        new MoreInfoError(nameof(ex.Endpoint),ex.Endpoint),
+                        new MoreInfoError(nameof(ex.ServiceResponse),ex.ServiceResponse),
                     }
-                });
+
+                };
             }
             else
             {
-                context.HttpContext.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                string stacktrace = JsonConvert.SerializeObject(context.Exception.StackTrace);
+                string innerex = JsonConvert.SerializeObject(context.Exception.InnerException);
 
-                json = JsonConvert.SerializeObject(new ErrorResponse
+                errorResp = new ErrorResponse
                 {
-                    HttpCode = ((int)HttpStatusCode.BadRequest).ToString(),
-                    HttpMessage = Constants.ResponseMessages.InternalError,
+                    HttpCode = httpStatusCode,
+                    HttpMessage = httpMessage,
+                    Exception = context.Exception,
+                    Message = context.Exception.Message,
                     MoreInformation = new List<MoreInfoError>
                     {
-                        new MoreInfoError
-                        {
-                            Campo = Constants.ResponseMessages.ExceptionMsg, Valor = context.Exception.Message
-                        }
+                        new MoreInfoError(nameof(context.Exception.StackTrace), stacktrace),
+                        new MoreInfoError(nameof(context.Exception.InnerException), innerex),
                     }
-                });
+
+                };
             }
 
-            await context.HttpContext.Response.WriteAsync(json);
+            context.HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+
+            json = JsonConvert.SerializeObject(errorResp);
+
             context.HttpContext.Response.ContentType = "application/json";
+            await context.HttpContext.Response.WriteAsync(json);
 
             await base.OnExceptionAsync(context);
         }

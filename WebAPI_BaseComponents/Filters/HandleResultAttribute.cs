@@ -45,11 +45,7 @@ namespace WebAPI_BaseComponents.Filters
                 {
                     HttpCode = ((int)HttpStatusCode.BadRequest).ToString(),
                     HttpMessage = ResponseMessages.BadRequestMsg,
-                    MoreInformation = context.ModelState.Select(e => new MoreInfoError
-                    {
-                        Campo = e.Key,
-                        Valor = e.Value?.Errors?.FirstOrDefault()?.ErrorMessage
-                    })
+                    MoreInformation = context.ModelState.Select(e => new MoreInfoError(e.Key, e.Value?.Errors?.FirstOrDefault()?.ErrorMessage))
                 })
                 {
                     StatusCode = (int)HttpStatusCode.BadRequest
