@@ -85,7 +85,8 @@ namespace AAD_WebAPI
 
             services.AddVersionedApiExplorer(op =>
             {
-                op.GroupNameFormat = "'v'VV";
+                //op.GroupNameFormat = "'v'VV";
+                op.GroupNameFormat = "VV";
                 //op.SubstituteApiVersionInUrl= true;
             });
 
@@ -139,32 +140,47 @@ namespace AAD_WebAPI
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                // Enable middleware to serve generated Swagger as a JSON endpoint.               
+                // Enable middleware to serve generated Swagger as a JSON endpoint.
+
+                // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), 
+                // specifying the Swagger JSON endpoint.
+                app.UseSwagger();
+                app.UseSwaggerUI(options =>
+                {
+                    // if not versioned
+                    //options.SwaggerEndpoint("/swagger/v1/swagger.json", "Example WebApi");
+
+                    // if versioned
+                    foreach (var item in apiVersionDescriptionProvider.ApiVersionDescriptions)
+                    {
+                        var url = $"{item.GroupName}/swagger.json";
+                        options.SwaggerEndpoint(url, item.GroupName.ToString());
+                    }
+                });
             }
             else
             {
                 app.UseHsts();
-            }
 
-            app.UseSwagger();
-
-            // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), 
-            // specifying the Swagger JSON endpoint.
-            app.UseSwaggerUI(options =>
-            {
-                // customize swagger ui entry point
-                //c.RoutePrefix = "swagger/ui/index.html";
-
-                // if not versioned
-                //options.SwaggerEndpoint("/swagger/v1/swagger.json", "Example WebApi");
-
-                // if versioned
-                foreach (var item in apiVersionDescriptionProvider.ApiVersionDescriptions)
+                // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), 
+                // specifying the Swagger JSON endpoint.
+                app.UseSwagger();
+                app.UseSwaggerUI(options =>
                 {
-                    var url = $"{item.GroupName}/swagger.json";
-                    options.SwaggerEndpoint(url, item.GroupName.ToString());
-                }
-            });
+                    // customize swagger ui entry point
+                    options.RoutePrefix = string.Empty;
+
+                    // if not versioned
+                    //options.SwaggerEndpoint("/swagger/v1/swagger.json", "Example WebApi");
+
+                    // if versioned
+                    foreach (var item in apiVersionDescriptionProvider.ApiVersionDescriptions)
+                    {
+                        var url = $"{item.GroupName}/swagger.json";
+                        options.SwaggerEndpoint(url, item.GroupName.ToString());
+                    }
+                });
+            }                       
 
             app.UseCors("default");
             app.UseHttpsRedirection();

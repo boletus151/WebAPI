@@ -27,12 +27,12 @@ using WebAPI_BaseComponents.Constants;
 
 namespace Base_WebAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/quotes")]
     [ApiController]
     [ApiVersion("1.0")]
     public class QuotesController : Controller
     {
-        private readonly IQuotesRepository quotesRepository;
+        protected readonly IQuotesRepository quotesRepository;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="QuotesController" /> class.
@@ -103,25 +103,30 @@ namespace Base_WebAPI.Controllers
         [SwaggerResponse(401, Description = ResponseMessages.UnauthorizedMsg)]
         [SwaggerResponse(404, Description = ResponseMessages.NotFoundMsg)]
         [SwaggerResponse(500, Description = ResponseMessages.InternalError)]
-        public Quote Get(int id)
+        public virtual Quote Get(int id)
         {
             return this.quotesRepository.GetQuoteById(id);
         }
+    }
+    
+    [Route("api/quotes")]
+    [ApiController]
+    [ApiVersion("2.0")]
+    public class QuotesV2Controller : QuotesController
+    {
 
         /// <summary>
-        /// Updates the specified quote.
+        ///     Initializes a new instance of the <see cref="QuotesController" /> class.
         /// </summary>
-        /// <param name="quote">The quote.</param>
-        /// <returns>The modified quote</returns>
-        [HttpPatch]
-        [SwaggerResponse(201, Type = typeof(string), Description = ResponseMessages.SuccessMsg)]
-        [SwaggerResponse(400, Description = ResponseMessages.BadRequestMsg)]
-        [SwaggerResponse(401, Description = ResponseMessages.UnauthorizedMsg)]
-        [SwaggerResponse(500, Description = ResponseMessages.InternalError)]
-        [Authorize(AuthenticationSchemes = "Bearer")]
-        public Quote Update(Quote quote)
+        /// <param name="quotesRepo">The quotes repository.</param>
+        public QuotesV2Controller(IQuotesRepository quotesRepo): base(quotesRepo)
         {
-            throw new NotImplementedException();
+        }
+
+        [HttpGet("{id}")]
+        public override Quote Get(int id)
+        {
+            return new Quote();
         }
     }
 }

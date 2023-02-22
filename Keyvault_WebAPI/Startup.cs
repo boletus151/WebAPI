@@ -38,7 +38,7 @@ namespace Keyvault_WebAPI
             services.AddVersionedApiExplorer(op =>
             {
                 op.GroupNameFormat = "'v'VV";
-                //op.SubstituteApiVersionInUrl= true;
+                op.SubstituteApiVersionInUrl = true;
             });
 
             services.AddSwaggerGen();
@@ -62,17 +62,34 @@ namespace Keyvault_WebAPI
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IApiVersionDescriptionProvider apiVersionDescriptionProvider)
         {
-            app.UseDeveloperExceptionPage();
-            app.UseSwagger();
-            app.UseSwaggerUI(c =>
+            if (env.IsDevelopment())
             {
-                foreach (var item in apiVersionDescriptionProvider.ApiVersionDescriptions)
+                app.UseDeveloperExceptionPage();
+                app.UseSwagger();
+                app.UseSwaggerUI(c =>
                 {
-                    var url = $"{item.GroupName}/swagger.json";
-                    c.SwaggerEndpoint(url, item.GroupName.ToString());
-                }
-            });
+                    foreach (var item in apiVersionDescriptionProvider.ApiVersionDescriptions)
+                    {
+                        var url = $"{item.GroupName}/swagger.json";
+                        c.SwaggerEndpoint(url, item.GroupName.ToString());
+                    }
+                });
+            }
+            else
+            {
+                app.UseHsts();
+                app.UseSwagger();
+                app.UseSwaggerUI(c =>
+                {
+                    c.RoutePrefix = string.Empty;
 
+                    foreach (var item in apiVersionDescriptionProvider.ApiVersionDescriptions)
+                    {
+                        var url = $"{item.GroupName}/swagger.json";
+                        c.SwaggerEndpoint(url, item.GroupName.ToString());
+                    }
+                });
+            }
             app.UseCors("default");
             app.UseHttpsRedirection();
             app.UseRouting();
