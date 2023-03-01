@@ -1,0 +1,72 @@
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  - name: System.Debug
+    value: false
+  - name: buildConfiguration
+    value: Release
+  - name: SERVICE_CONNECTION_NAME
+    value: sarall-ADO-service-conn
+
+trigger: none
+
+stages:
+  - stage: validation_stage
+    displayName: Validate ARM templates
+    jobs: 
+      - job:
+        steps:
+          - task: AzureResourceManagerTemplateDeployment@3
+            displayName: ARM Template Validation Mode
+            inputs:
+              deploymentScope: 'Resource Group'
+              azureResourceManagerConnection: $(SERVICE_CONNECTION_NAME)
+              action: 'Create Or Update Resource Group'
+              resourceGroupName: rg-webapi 
+              location: 'France Central' # string. Required when action = Create Or Update Resource Group || deploymentScope != Resource Group. Location. 
+            # Template
+              templateLocation: '$(Build.Repository.LocalPath)/Base_WebAPI/ApiVersions/apiVersion1-Rev1'
+              #csmFileLink: # string. Required when templateLocation = URL of the file. Template link. 
+              #csmParametersFileLink: # string. Optional. Use when templateLocation = URL of the file. Template parameters link. 
+              #csmFile: # string. Required when templateLocation = Linked artifact. Template. 
+              #csmParametersFile: # string. Optional. Use when templateLocation = Linked artifact. Template parameters. 
+              #overrideParameters: # string. Override template parameters. 
+              deploymentMode: 'Validation' # 'Incremental' | 'Complete' | 'Validation'. Required. Deployment mode. Default: Incremental.
+            # Advanced
+              #deploymentName: # string. Deployment name. 
+              #deploymentOutputs: # string. Deployment outputs. 
+
+          
+
+  #- stage: deployment
+  #  displayName: Deploy new APIM version
+  #  dependsOn: validation_stage
+  #  condition: succeeded()
+  #  jobs:
+  #    - job:
+  #      steps:
+  #        - checkout: none
+  #        # download the artifact drop from the previous job
+  #        - task: DownloadPipelineArtifact@2
+  #          displayName: Download artifact from $(Build.ArtifactStagingDirectory)\drop
+  #          inputs:
+  #            source: current
+  #            artifactName: drop
+  #            targetPath : "$(Build.ArtifactStagingDirectory)"
+  #        - task: AzureWebApp@1
+  #          displayName: Deploy WebApp in Azure
+  #          inputs:
+  #            azureSubscription: $(SERVICE_CONNECTION_NAME)
+  #            appType: 'webApp'
+  #            appName: $(APP_NAME)
+  #            package: $(Build.ArtifactStagingDirectory)/**/*.zip
+  #            appSettings:
+  #              -APISEnvironment $(APISEnvironment)
+  #              -AzureAd:ClientId $(ClientId)
+  #              -AzureAd:Instance $(Instance)
+  #              -AzureAd:TenantId $(TenantId)
+  #              -Insis10EnvCustomServices $(Insis10EnvCustomServices)
+  #              -Insis10Env $(Insis10Env)
+  #              -KeyvaultName $(KeyvaultName)
+#

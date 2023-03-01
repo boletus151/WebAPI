@@ -1,0 +1,30 @@
+version: 0.0.1
+apimServiceName: bolet-apim-example
+apiVersionSets:
+    - id: v1
+      displayName: v1
+      description: Quotes Basic
+      versioningScheme: Header
+      versionHeaderName: api-version
+apis:
+    - name: quotes
+      type: https
+      displayName: Quotes Services
+      description: Basic operations with some authentication
+      serviceUrl: https://bolet-base-webapi.azurewebsites.net/
+      # relative to ArmTemplates Creator tool
+      openApiSpec: ../../Base_WebAPI/ApiVersions/apispec-v1.json
+      openApiSpecFormat: swagger
+      suffix: quotes
+      subscriptionRequired: false
+      isCurrent: true
+      apiVersion: v1
+      apiVersionDescription: 
+      apiVersionSetId: v1
+      apiRevision: 1
+      apiRevisionDescription:  
+
+# relative to ArmTemplates Creator tool
+outputLocation: ../apiVersion1-Rev1
+linked: false
+#baseFileName: templates-v1
