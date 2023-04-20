@@ -72,7 +72,7 @@ namespace Base_WebAPI.Controllers
         [SwaggerResponse(401, Description = ResponseMessages.UnauthorizedMsg)]
         [SwaggerResponse(404, Description = ResponseMessages.NotFoundMsg)]
         [SwaggerResponse(500, Description = ResponseMessages.InternalError)]
-        public bool Delete(int id)
+        public bool DeleteById(int id)
         {
             return this.quotesRepository.Delete(id);
         }
@@ -87,7 +87,7 @@ namespace Base_WebAPI.Controllers
         [SwaggerResponse(401, Description = ResponseMessages.UnauthorizedMsg)]
         [SwaggerResponse(404, Description = ResponseMessages.NotFoundMsg)]
         [SwaggerResponse(500, Description = ResponseMessages.InternalError)]
-        public IEnumerable<Quote> Get()
+        public IEnumerable<Quote> GetAll()
         {
             return this.quotesRepository.GetQuotes();
         }
@@ -103,30 +103,30 @@ namespace Base_WebAPI.Controllers
         [SwaggerResponse(401, Description = ResponseMessages.UnauthorizedMsg)]
         [SwaggerResponse(404, Description = ResponseMessages.NotFoundMsg)]
         [SwaggerResponse(500, Description = ResponseMessages.InternalError)]
-        public virtual Quote Get(int id)
+        public virtual Quote GetById(int id)
         {
             return this.quotesRepository.GetQuoteById(id);
         }
     }
     
-    [Route("api/quotes")]
-    [ApiController]
-    [ApiVersion("2.0")]
-    public class QuotesV2Controller : QuotesController
-    {
+    //[Route("api/quotes")]
+    //[ApiController]
+    //[ApiVersion("2.0")]
+    //public class QuotesV2Controller : QuotesController
+    //{
 
-        /// <summary>
-        ///     Initializes a new instance of the <see cref="QuotesController" /> class.
-        /// </summary>
-        /// <param name="quotesRepo">The quotes repository.</param>
-        public QuotesV2Controller(IQuotesRepository quotesRepo): base(quotesRepo)
-        {
-        }
+    //    /// <summary>
+    //    ///     Initializes a new instance of the <see cref="QuotesController" /> class.
+    //    /// </summary>
+    //    /// <param name="quotesRepo">The quotes repository.</param>
+    //    public QuotesV2Controller(IQuotesRepository quotesRepo): base(quotesRepo)
+    //    {
+    //    }
 
-        [HttpGet("{id}")]
-        public override Quote Get(int id)
-        {
-            return new Quote();
-        }
-    }
+    //    [HttpGet("{id}")]
+    //    public override Quote Get(int id)
+    //    {
+    //        return new Quote();
+    //    }
+    //}
 }

@@ -1,0 +1,85 @@
+stages:
+  - stage: ${{ parameters.deployapi_stage }}
+    displayName: Deploy API
+    jobs:
+      - job: buildapi_job
+        displayName: Build and publish to ArtifactStagingDirectory
+        steps:        
+          - task: PowerShell@2
+            displayName: Check env variables
+            inputs:
+              targetType: 'inline'
+              script: |
+                Write-Host $(buildConfiguration)
+                Write-Host $(SERVICE_CONNECTION_NAME)
+                Write-Host $(ENVIRONMENT)
+                Write-Host $(APP_NAME)
+
+          - task: UseDotNet@2
+            displayName: Install .NET 7 SDK
+            inputs:
+              version: 7.x
+
+          - task: UseDotNet@2
+            displayName: Install .NET 6 SDK
+            inputs:
+              version: 6.x
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Build to execute swagger cli'
+            inputs:
+              command: 'build'
+              projects: '**/*.sln'
+              arguments: --configuration $(buildConfiguration)
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Build application and zip artifact'
+            inputs:
+              command: 'publish'
+              projects: '**/*.sln'
+              publishWebProjects: false
+              arguments: --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)
+              zipAfterPublish: true
+
+          - task: PublishBuildArtifacts@1
+            displayName: Publish artifact at '$(Build.ArtifactStagingDirectory)'
+            inputs:
+              PathtoPublish: $(Build.ArtifactStagingDirectory)
+              ArtifactName: 'drop' # string. Required. Artifact name. Default: drop.
+              publishLocation: Container
+
+      - deployment:
+        dependsOn: buildapi_job        
+        displayName: Deploy Web App to Azure
+        environment: $(ENVIRONMENT)
+        variables:
+          ${{ if eq(variables['ENVIRONMENT'], 'QA')}}:
+            varDisplayName: 'Deploy Web App to QA' 
+            varSlotName: ''
+          ${{ else }}:
+            varDisplayName: 'Deploy Web App to DEV'
+            varSlotName: $(APP_SLOT_NAME)
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: none
+                # download the artifact drop from the previous job
+                - task: DownloadPipelineArtifact@2
+                  displayName: Download artifact from '$(Build.ArtifactStagingDirectory)'
+                  inputs:
+                    source: current
+                    artifactName: drop
+                    targetPath : $(Build.ArtifactStagingDirectory)
+                - task: AzureWebApp@1
+                  displayName: $(varDisplayName)
+                  inputs:
+                    azureSubscription: $(SERVICE_CONNECTION_NAME)
+                    appType: 'webApp'
+                    appName: $(APP_NAME)
+                    slotName: $(varSlotName)
+                    package: $(Build.ArtifactStagingDirectory)/**/*.zip
+                    appSettings:
+                      -AzureAd:ClientId $(appsettings-ClientId)
+                      -AzureAd:Instance $(appsettings-Instance)
+                      -AzureAd:TenantId $(appsettings-TenantId)

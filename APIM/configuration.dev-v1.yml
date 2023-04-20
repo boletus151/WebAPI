@@ -1,0 +1,33 @@
+version: 0.0.1
+apimServiceName: bolet-apim-example
+apiVersionSets:
+  - id: headerVersionSet
+    displayName: Quotes
+    description: "Basic operations with some authentication"
+    versioningScheme: Header
+    versionHeaderName: api-version
+apis:
+  - name: quotes-dev
+    type: http
+    # Relative to the path where the script is executing.
+    # In an Azure ADO pipeline from the Build.SourceDirectory
+    openApiSpec: webapi-example/API/Base_WebAPI/ApiVersions/apispec-v1.json
+    openApiSpecFormat: OpenApi30_Json
+    suffix: quotes-dev
+    subscriptionRequired: false
+    isCurrent: true
+    apiVersion: v1
+    apiVersionSetId: headerVersionSet
+    apiRevision: 2
+    # Relative to the path where the script is executing.
+    # In an Azure ADO pipeline from the Build.SourceDirectory
+    policy: webapi-example/APIM/general-policies.xml
+
+# Relative to the path where the script is executing.
+# In an Azure ADO pipeline from the Build.SourceDirectory
+outputLocation: webapi-example/APIM/ArmTemplates/dev-current
+baseFileName: quotes-dev
+linked: false
+serviceUrlParameters:
+  - apiName: quotes-dev
+    serviceUrl: https://bolet-base-webapi-dev.azurewebsites.net/

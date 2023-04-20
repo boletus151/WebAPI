@@ -1,0 +1,104 @@
+pool:
+  vmImage: "windows-latest"
+
+parameters:
+  - name: env
+    type: string
+    default: DEV
+    values:
+      - DEV
+      - QA
+
+variables:
+  - ${{ if eq(parameters['env'], 'QA')}}:
+      group: "apim-qa"
+    ${{ else }}:
+      group: "apim-dev"
+  # - name: SERVICE_CONNECTION_NAME_GITHUB
+  #   value: github-service-conn
+  - name: System.Debug
+    value: false
+  - name: buildConfiguration
+    value: Release
+
+trigger: none
+
+resources:
+  repositories:
+    - repository: Creator
+      type: github
+      # endpoint: $(SERVICE_CONNECTION_NAME_GITHUB) --> not working
+      endpoint: "github-service-conn"
+      name: Azure/azure-api-management-devops-resource-kit #https://github.com/Azure/azure-api-management-devops-resource-kit.git
+
+jobs:
+  - job:
+    displayName:
+    steps:
+      - checkout: self
+      - checkout: Creator
+
+      - template: ./Templates/prepare-environment.tasks.template.yaml
+
+      - task: DotNetCoreCLI@2
+        displayName: "Build APIM Resource Kit Tool (Creator)"
+        inputs:
+          command: "build"
+          projects: "azure-api-management-devops-resource-kit/**/*.sln"
+          arguments: --configuration $(buildConfiguration) --output $(Build.SourcesDirectory)/$(Path_CreatorTool)
+
+      # - task: DotNetCoreCLI@2
+      #   displayName: 'Build webapp to execute swagger cli'
+      #   inputs:
+      #     command: 'build'
+      #     projects: 'webapi-example/**/Base_WebAPI.csproj'
+      #     arguments: --configuration $(buildConfiguration)
+
+      - task: PowerShell@2
+        displayName: Create ARM-Templates
+        inputs:
+          targetType: "filePath"
+          filePath: $(Build.SourcesDirectory)/$(Path_Scripts)/arm-templates-create.ps1
+          arguments: -toolPath $(Build.SourcesDirectory)/$(Path_CreatorTool) -configFile $(Build.SourcesDirectory)/$(ArmCreatorConfigurationFile)
+
+      - task: PowerShell@2
+        displayName: Validate ARM-Templates
+        inputs:
+          targetType: "filePath"
+          filePath: $(Build.SourcesDirectory)/$(Path_Scripts)/arm-templates-validate.ps1
+          arguments: -resourceGroup $(RG) -templatesPath "$(Build.SourcesDirectory)/$(Path_ArmTemplates)"$(Path_ArmTemplates) -parameters $(ArmParameters)
+
+      - task: AzurePowerShell@5
+        displayName: Upload templates to Azure Template Specs
+        inputs:
+          azureSubscription: $(SERVICE_CONNECTION_NAME)
+          ScriptType: "FilePath"
+          ScriptPath: $(Build.SourcesDirectory)/$(Path_Scripts)/template-specs-upload.ps1
+          ScriptArguments: -templatesPath $(Build.SourcesDirectory)/$(Path_ArmTemplates) -resourceGroup $(RG) -version original
+          azurePowerShellVersion: LatestVersion
+
+      - task: AzurePowerShell@5
+        displayName: Validate Master Template
+        inputs:
+          azureSubscription: $(SERVICE_CONNECTION_NAME)
+          ScriptType: "InlineScript"
+          Inline: |
+            Test-AzResourceGroupDeployment -SkipTemplateParameterPrompt -ResourceGroupName $(RG) -TemplateFile $(Build.SourcesDirectory)/$(ArmMasterTemplate) -TemplateParameterFile $(Build.SourcesDirectory)/$(ArmParameters)
+          # ScriptArguments: --> Not working
+            # -SkipTemplateParameterPrompt
+            # -ResourceGroupName $(RG) 
+            # -TemplateFile $(Build.SourcesDirectory)/$(ArmMasterTemplate)
+            # -TemplateParameterFile $(Build.SourcesDirectory)/$(ArmParameters)
+          azurePowerShellVersion: "LatestVersion"
+
+      - task: AzureResourceManagerTemplateDeployment@3
+        displayName: Deploy APIM to Azure
+        inputs:
+          azureResourceManagerConnection: $(SERVICE_CONNECTION_NAME)
+          deploymentScope: Resource Group
+          resourceGroupName: $(RG)
+          action: "Create Or Update Resource Group"
+          templateLocation: "Linked artifact"
+          csmFile: $(Build.SourcesDirectory)/$(ArmMasterTemplate)
+          csmParametersFile: $(Build.SourcesDirectory)/$(ArmParameters)
+          deploymentMode: "Incremental" # 'Incremental' | 'Complete' | 'Validation'. Required. Deployment mode. Default: Incremental.

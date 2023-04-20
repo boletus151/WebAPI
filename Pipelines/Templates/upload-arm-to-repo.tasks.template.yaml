@@ -1,0 +1,60 @@
+steps:
+  # - bash: |
+  #     name=$(Build.SourceBranchName)
+  #     user=$(git log -n 1 --pretty=format:'%an')
+  #     email=$(git log -n 1 --pretty=format:'%ae')
+
+  #     echo Build.SourceBranchName $name
+  #     echo User $user
+  #     echo Email $email
+
+  #     git config user.email $user
+  #     git config user.name $email
+  #   displayName: "Configure Author"
+
+  - bash: |
+
+      echo "testing PR" > APIM/testpr.txt
+
+      git switch -c "new-arm-templates"
+      git fetch
+      git add .
+    displayName: "Add changes"
+    
+
+  - bash: |
+      git config --global user.email "you@example.com"
+      git config --global user.name "Your Name"
+      git commit -m "Add new ARM Templates"
+    displayName: "Commit changes"
+
+  # - bash: |
+  #     git push -u origin "new-arm-templates"
+  #   displayName: "Push changes to new branch"
+  
+  - task: AzurePowerShell@5
+    displayName: "Push changes to new branch"
+    inputs:
+      azureSubscription: $(SERVICE_CONNECTION_NAME)
+      ScriptType: "InlineScript" # 'FilePath' | 'InlineScript'. Script Type. Default: FilePath.
+      Inline: |
+        git pull origin $(Build.SourceBranchName)
+        git push -u origin "new-arm-templates" --force
+      azurePowerShellVersion: LatestVersion
+      errorActionPreference: "stop" # 'stop' | 'continue' | 'silentlyContinue'. ErrorActionPreference. Default: stop.
+      FailOnStandardError: true # boolean. Fail on Standard Error. Default: false.
+
+  - task: AzurePowerShell@5
+    displayName: Create pull request
+    inputs:
+      azureSubscription: $(SERVICE_CONNECTION_NAME)
+      ScriptType: "InlineScript" # 'FilePath' | 'InlineScript'. Script Type. Default: FilePath.
+      Inline: |
+        az repos pr create --repository $(Build.Repository.ID) --project "kbc-test" --source-branch "new-arm-templates" --target-branch master --title "Create new arm templates from build $(Build.BuildId)" --description "Review the names before approving"
+      azurePowerShellVersion: LatestVersion
+      errorActionPreference: "stop" # 'stop' | 'continue' | 'silentlyContinue'. ErrorActionPreference. Default: stop.
+      FailOnStandardError: true # boolean. Fail on Standard Error. Default: false.
+
+# - script: |
+#     az repos pr create --repository $(Build.Repository.ID) --source-branch $branchName --target-branch master --title "Create new arm templates from build $(Build.BuildId)" --description "Review the names before approving"
+#   displayName: 'Create pull request'

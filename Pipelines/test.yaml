@@ -1,0 +1,64 @@
+pool:
+  vmImage: "windows-latest"
+
+parameters:
+  - name: env
+    type: string
+    default: DEV
+    values:
+      - DEV
+      - QA
+
+variables:
+  - ${{ if or(eq(parameters['env'], 'QA'), eq(variables['Build.SourceBranchName'], 'master'))}}: 
+      group: "apim-qa"
+    ${{ else }}:
+      group: "apim-dev"
+  - ${{ if or(eq(parameters['env'], 'QA'), eq(variables['Build.SourceBranchName'], 'master'))}}:
+      group: "api-qa"
+    ${{ else }}:
+      group: "api-dev"
+  # - name: SERVICE_CONNECTION_NAME_GITHUB
+  #   value: github-service-conn
+  - name: System.Debug
+    value: false
+  - name: buildConfiguration
+    value: Release
+
+# trigger:
+#   branches:
+#     include:
+#       - update-ci-pipeline
+
+trigger: none
+
+steps:
+- bash: |
+    name=$(Build.SourceBranchName)
+    sourceBranch=$(Build.SourceBranch)
+    user=$(git log -n 1 --pretty=format:'%an')
+    email=$(git log -n 1 --pretty=format:'%ae')
+
+    echo Build.SourceBranchName $name
+    echo User $user
+    echo Email $email
+    echo the sourceBranch $sourceBranch
+    echo the sourceBranchName $name
+
+    git config user.email $user
+    git config user.name $email
+  displayName: "Configure Author"
+
+- task: PowerShell@2
+  inputs:
+    targetType: 'inline' # 'filePath' | 'inline'. Type. Default: filePath.
+    script: |      
+
+      $user = & git log -n 1 --pretty=format:'%an'
+      $email = & git log -n 1 --pretty=format:'%ae'
+
+      write-host User $user
+      write-host Email $email
+
+      git config user.email $user
+      git config user.name $email

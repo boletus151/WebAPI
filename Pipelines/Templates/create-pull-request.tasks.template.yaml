@@ -1,0 +1,115 @@
+steps:
+  - task: DownloadPipelineArtifact@2
+    displayName: Download artifact from $(Build.ArtifactStagingDirectory)
+    inputs:
+      source: current
+      artifactName: ARMTemplates
+      targetPath : "$(Build.ArtifactStagingDirectory)"
+
+  - task: PowerShell@2
+    displayName: Check Directories
+    inputs:
+      targetType: 'inline'
+      script: |
+        Write-Host Path: Build.ArtifactStagingDirectory
+        Get-ChildItem -path $(Build.ArtifactStagingDirectory) -depth 2
+
+  - task: PowerShell@2
+    displayName: Install DevOps Tools
+    inputs:
+      targetType: "inline"
+      script: |
+        Write-Host "Installing Azure DevOps extension..."
+        az extension add --name "azure-devops"
+        az devops configure --defaults organization="$(System.TeamFoundationCollectionUri)" project="$(System.TeamProject)"
+
+  - task: PowerShell@2
+    displayName: Create Pull Request
+    inputs:
+      targetType: "inline"
+      script: |
+        Set-StrictMode -Version Latest
+        $ErrorActionPreference = "Stop"
+        $VerbosePreference = "Continue"
+        $InformationPreference = "Continue"
+
+        Write-Host "Creating temporary folder..."
+        $temporaryClonedRepoPath = Join-Path "$(Agent.TempDirectory)" "repo-$(Build.Repository.Name)"
+        New-Item -Path "$temporaryClonedRepoPath" -ItemType "Directory"
+                      
+        $branchName = "$(Build.SourceBranchName)"
+        $temporaryBranchName = "artifacts-from-build-$(Build.BuildId)"
+        $repositoryName = "$(Build.Repository.Name)"
+        
+        Write-Host "Cloning branch $branchName in repository $repositoryName..."
+        $cloneUrl = az repos show --repository "$repositoryName" --query "remoteUrl" --output tsv
+        Write-Host "Clone URL is $cloneUrl"
+        git -c http.extraheader="AUTHORIZATION: Bearer $(System.AccessToken)" clone --branch "$branchName" --depth 1 "$cloneUrl" "$temporaryClonedRepoPath"
+        
+        if ($LASTEXITCODE -ne 0) { throw "Cloning branch $branchName in repository $repositoryName failed." }
+        
+        Write-Host "Creating temporary branch $temporaryBranchName from $branchName..."
+        git -C "$temporaryClonedRepoPath" checkout -b "$temporaryBranchName" "$branchName"
+        
+        if ($LASTEXITCODE -ne 0) { throw "Creating temporary branch $temporaryBranchName from $branchName failed." }
+        
+        Write-Host "Creating artifacts folder..."
+        $temporaryRepoArmTemplatesPath = Join-Path "$temporaryClonedRepoPath" "$(Path_ArmTemplates)"
+        
+        if ((Test-Path -Path "$temporaryRepoArmTemplatesPath") -eq $false) {
+            New-Item -Path "$temporaryRepoArmTemplatesPath" -ItemType "Directory"
+        }
+
+        Write-Host "Synchronizing artifacts..."
+        $artifacts = "$(Build.ArtifactStagingDirectory)"
+        
+        if ("$(Agent.OS)" -like "*win*") {
+            & robocopy "$artifacts" "$temporaryRepoArmTemplatesPath" /zb /mir /mt
+            if ($LASTEXITCODE -gt 7) { throw "Setting $temporaryRepoArmTemplatesPath to contents of $artifacts failed." }
+        }
+        else {
+            & rsync --verbose --archive --delete --force --recursive "$artifacts/" "$temporaryRepoArmTemplatesPath/"
+            if ($LASTEXITCODE -ne 0) { throw "Setting $temporaryRepoArmTemplatesPath to contents of $artifacts failed." }
+        }
+
+        echo "testing PR" > $temporaryClonedRepoPath/pr.txt
+
+        Write-Host "Setting git user information..."
+        $user = & git log -n 1 --pretty=format:'%an'
+        $email = & git log -n 1 --pretty=format:'%ae'
+
+        Write-Host User $user
+        Write-Host Email $email
+
+        git config --global user.email $email
+        git config --global user.name $user
+
+        Write-Host "Adding changes..."
+        git -C "$temporaryClonedRepoPath" add --all
+        if ($LASTEXITCODE -ne 0) { throw "Adding Git changes failed." }
+        
+        Write-Host "Committing changes"
+        $commitOutput = git -C "$temporaryClonedRepoPath" commit --message "Upload pipeline changes"
+        if ($LASTEXITCODE -ne 0) { 
+          if ($commitOutput.Contains("nothing to commit, working tree clean")) {
+            Write-Host "No changes exist to be published."
+            return
+          }
+          throw "Committing Git changes failed." 
+        }
+        
+        Write-Host "Pushing changes"
+        git -C "$temporaryClonedRepoPath" -c http.extraheader="AUTHORIZATION: Bearer $(System.AccessToken)" push --set-upstream origin "$temporaryBranchName"
+        if ($LASTEXITCODE -ne 0) { throw "Pushing Git changes failed." }
+        
+        Write-Host "Creating pull request..."
+        az repos pr create --source-branch "$temporaryBranchName" --target-branch "$branchName" --title "Merging artifacts from portal (Build $(Build.BuildId))" --squash --delete-source-branch "true" --repository "$repositoryName"
+        if ($LASTEXITCODE -ne 0) { throw "Creating pull request failed." }
+        
+        Write-Host "Deleting temporary folder contents..."
+        Remove-Item -Path "$temporaryClonedRepoPath" -Recurse -Force
+        
+        Write-Host "Execution complete."
+      pwsh: true
+    env:
+      AZURE_DEVOPS_EXT_PAT: "$(System.AccessToken)"
