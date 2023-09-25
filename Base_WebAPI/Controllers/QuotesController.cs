@@ -22,6 +22,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Quotes.Contracts;
 using Quotes.Model.UI;
+using Quotes.Model.UI.Enums;
 using Swashbuckle.AspNetCore.Annotations;
 using WebAPI_BaseComponents.Constants;
 
@@ -87,7 +88,7 @@ namespace Base_WebAPI.Controllers
         [SwaggerResponse(401, Description = ResponseMessages.UnauthorizedMsg)]
         [SwaggerResponse(404, Description = ResponseMessages.NotFoundMsg)]
         [SwaggerResponse(500, Description = ResponseMessages.InternalError)]
-        public IEnumerable<Quote> GetAll()
+        public virtual IEnumerable<Quote> GetAll()
         {
             return this.quotesRepository.GetQuotes();
         }
@@ -103,30 +104,53 @@ namespace Base_WebAPI.Controllers
         [SwaggerResponse(401, Description = ResponseMessages.UnauthorizedMsg)]
         [SwaggerResponse(404, Description = ResponseMessages.NotFoundMsg)]
         [SwaggerResponse(500, Description = ResponseMessages.InternalError)]
-        public virtual Quote GetById(int id)
+        public Quote GetById(int id)
         {
             return this.quotesRepository.GetQuoteById(id);
         }
     }
-    
-    //[Route("api/quotes")]
-    //[ApiController]
-    //[ApiVersion("2.0")]
-    //public class QuotesV2Controller : QuotesController
-    //{
 
-    //    /// <summary>
-    //    ///     Initializes a new instance of the <see cref="QuotesController" /> class.
-    //    /// </summary>
-    //    /// <param name="quotesRepo">The quotes repository.</param>
-    //    public QuotesV2Controller(IQuotesRepository quotesRepo): base(quotesRepo)
-    //    {
-    //    }
+    [Route("api/quotes")]
+    [ApiController]
+    [ApiVersion("2.0")]
+    public class QuotesV2Controller : QuotesController
+    {
 
-    //    [HttpGet("{id}")]
-    //    public override Quote Get(int id)
-    //    {
-    //        return new Quote();
-    //    }
-    //}
+        /// <summary>
+        ///     Initializes a new instance of the <see cref="QuotesController" /> class.
+        /// </summary>
+        /// <param name="quotesRepo">The quotes repository.</param>
+        public QuotesV2Controller(IQuotesRepository quotesRepo) : base(quotesRepo)
+        {
+        }
+
+        [HttpGet()]
+        public override IEnumerable<Quote> GetAll()
+        {
+            var collection = this.quotesRepository.GetQuotes().Select(e => e.Id).ToList();
+            var idList = new List<int>(collection);
+            foreach (var item in idList)
+            {
+                this.quotesRepository.Delete(item);
+            }
+
+            var newQuotes = GetAllDummyQuotes();
+            foreach (var item in newQuotes)
+            {
+                this.quotesRepository.AddQuote(item);
+            }
+            return this.quotesRepository.GetQuotes();
+        }
+
+        private static List<Quote> GetAllDummyQuotes()
+        {
+            return new List<Quote>
+            {
+                new Quote { Id = 1, QuoteType =  QuoteTypes.Saying, Author = "Refranero", QuoteText = "A buen gato, buen rato" },
+                new Quote { Id = 2, QuoteType =  QuoteTypes.Saying, Author = "Refranero", QuoteText = "A bien obrar, bien pagar" },
+                new Quote { Id = 3, QuoteType =  QuoteTypes.Saying, Author = "Refranero", QuoteText = "Aprendiz de mucho, maestro de nada" },
+                new Quote { Id = 4, QuoteType =  QuoteTypes.Saying, Author = "Refranero", QuoteText = "Año de brevas, nunca lo veas" }
+            };
+        }
+    }
 }
